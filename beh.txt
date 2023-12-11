@@ -1,0 +1,236 @@
+
+
+#include <Adafruit_CircuitPlayground.h>
+#include <Adafruit_Circuit_Playground.h>
+
+#define BUFF_LEN 20
+#define LOG_LEN 100
+#define PREDICT
+#define ONLY_GRAPH_MOVING
+
+class Cord {
+  public:
+    float X, Y, Z;
+    float getMag() {
+      return sqrt(X*X+Y*Y+Z*Z);
+    }
+};
+
+const float upDown[] = {0.14500420117653626, 0.1608621954957033, 0.13972190042914245, -0.11627827588443261, -0.15435091235913348, -0.14896045790167428, -0.1470686071716592, -0.0772589903659473, -0.03865353161539452, 0.011756264138224028, 0.03348296943763061, 0.04126052274432673, 0.05696609732351385, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.013095181492476307, -0.19560137355408738, -0.29844499168562716, 0.1891265816573838, 0.23596560788791968, 0.061815418468705835, -0.08076798505248556, 0.03866292270590497, -0.1825322556370679, -0.35789428065998835, -0.5677461208945531, -0.4545958716143783, -0.3492413705553233, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6796069125108757, 0.5641223888816739, -0.21044275646469812, -0.21103688112793215, -0.08719212021039853, -0.16943398927060774, -0.19741712010787246, -0.17242065657252947, 0.060977886803008675, 0.2921562847545517, 0.45945523707925573, 0.15898543138093751, 0.11125460691257263, 0.23312421168190436, 0.08346836118205514, 0.0, 0.0, 0.0, 0.0, 0.0};
+const float upDownInt = -11.366717877677043;
+
+const float rightLeft[] = {-0.16503290482335814, -0.17801675582711832, -0.0982069728433975, 0.1519918447061272, 0.18864020104109694, 0.17206603069608725, 0.16437481456810027, 0.09131096588198045, 0.06151575683223157, 0.01580354236003472, -0.01917732466429138, -0.0246218989217969, -0.05095581810026781, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5664756023696185, 0.6708626100442853, 0.5679375422086896, 0.058291161172357914, 0.005418863939510469, 0.08176154041426406, 0.13909298260831857, -0.029901706526953654, 0.09923528612390395, 0.2895939029776382, 0.3945414795622053, 0.25607913965171, 0.2572096069733552, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.09454190782816245, -0.02776729905519865, 0.3752607618210604, 0.4270530820609888, 0.2835219771986922, 0.2650537331879887, 0.17280226750571487, 0.17929471583286247, -0.046159489070925354, 0.07463846677050973, -0.20659417308225203, -0.21598590258676728, 0.038233944356608145, -0.21872236773473266, -0.05537760009966628, 0.0, 0.0, 0.0, 0.0, 0.0};
+const float rightLeftInt = -15.168843138675692;
+
+const float rotRight[] = {0.05462461560931835, 0.05069629996549484, -0.02388915201506676, -0.05455458347557597, -0.06257941316911124, -0.04712125900315632, -0.0443655082602187, -0.0320475348331254, -0.03316664228516848, -0.021736745431492566, -0.006385131155415804, -0.0041771567772142465, 0.00011306857768716042, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.4551125123113644, -0.42919498922447535, -0.22752279534166667, -0.1474069208794212, -0.11966284884746305, -0.07074683157727935, -0.039226920695206204, -0.005360207667087578, 0.041057061675510695, 0.0013353581258618496, 0.02785734268394351, 0.01804177730825192, -0.0010780439380638459, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.4673246735380747, -0.4038650040838445, -0.24874779814999998, -0.19011445711716352, -0.147596019445265, -0.08715817975397835, -0.03675857240114218, -0.012073871931716842, 0.03332334272144242, -0.17378217866510176, -0.1282843430926982, -0.09926768819173842, -0.12942996704296506, -0.05462393314588782, -0.01903525134257649, 0.0, 0.0, 0.0, 0.0, 0.0};
+const float rotRightInt = 13.072364059485912;
+
+Cord buffer[BUFF_LEN];
+float X, Y, Z;
+
+Cord prev = {0.0, 0.0, 0.0};
+bool moving = false;
+size_t stillCount = 0;
+
+int queue[10];
+size_t queueInd = 0;
+
+Cord _log[LOG_LEN];
+size_t logInd = 0;
+
+
+// float compareUpDown() {
+//   float sum = 0.0;
+//   for (size_t i = 0; i < upDownLen; ++i) {
+//     float diff = abs(upDown[i] - _log[i].Z);
+//     sum += diff;
+//   }
+//   for (size_t i = 0; i < upDownLen; ++i) {
+//     Serial.print(_log[i].Z);
+//     Serial.print(", ");
+//   }
+//   Serial.println();
+//   for (size_t i = 0; i < upDownLen; ++i) {
+//     Serial.print(upDown[i]);
+//     Serial.print(", ");
+//   }
+//   Serial.println();
+  
+//   return sum;
+// }
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  CircuitPlayground.begin();
+  for (int i = 0; i < BUFF_LEN; ++i) {
+    buffer[i] = {0.0, 0.0, 0.0};
+  }
+  pinMode(13, OUTPUT);
+  digitalWrite(13, HIGH);
+}
+
+int end = 0;
+Cord sum = {0.0, 0.0, 0.0};
+
+Cord addPoint(float X, float Y, float Z) {
+  Cord tail = buffer[end];
+  buffer[end] = {X, Y, Z};
+
+  sum.X += X;
+  sum.X -= tail.X;
+  sum.Y += Y;
+  sum.Y -= tail.Y;
+  sum.Z += Z;
+  sum.Z -= tail.Z;
+
+  Cord avg = {sum.X/BUFF_LEN, sum.Y/BUFF_LEN, sum.Z/BUFF_LEN};
+  end = (end+1) % BUFF_LEN;
+  return avg;
+}
+
+void printData(float data[], int len) {
+  for(int i = 0; i < len-1; ++i) {
+    Serial.print(data[i]);
+    Serial.print(", ");
+  }
+  Serial.println(data[len-1]);
+}
+
+Cord basis = {0.0, 0.0, 0.0};
+
+int predict(Cord cords[]) {
+  const float* weights[] = {upDown, rightLeft, rotRight};
+  const float intercepts[] = {upDownInt, rightLeftInt, rotRightInt};
+  float sums[] = {0.0, 0.0, 0.0};
+  for (size_t i = 0; i < 20; ++i) {
+    sums[0] += weights[0][i] * cords[i].X;
+    sums[1] += weights[1][i] * cords[i].X;
+    sums[2] += weights[2][i] * cords[i].X;
+  }
+  for (size_t i = 20; i < 40; ++i) {
+    sums[0] += weights[0][i] * cords[i-20].Y;
+    sums[1] += weights[1][i] * cords[i-20].Y;
+    sums[2] += weights[2][i] * cords[i-20].Y;
+  }
+  for (size_t i = 40; i < 60; ++i) {
+    sums[0] += weights[0][i] * cords[i-40].Z;
+    sums[1] += weights[1][i] * cords[i-40].Z;
+    sums[2] += weights[2][i] * cords[i-40].Z;
+  }
+  for (size_t i = 0; i < 3; ++i) {
+    sums[i] += intercepts[i];
+  }
+  float max = sums[0];
+  int maxInd = 0;
+  for (size_t i = 1; i < 3; ++i) {
+    if (sums[i] > max) {
+      max = sums[i];
+      maxInd = i;
+    }
+  }
+  return maxInd;
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  X = CircuitPlayground.motionX();
+  Y = CircuitPlayground.motionY();
+  Z = CircuitPlayground.motionZ();
+  Cord avg = addPoint(X, Y, Z);
+  #ifdef GRAPH
+    #ifdef ONLY_GRAPH_MOVING
+    if (moving) {
+    #endif
+    float data[] = {avg.X, avg.Y, avg.Z, avg.getMag(), (float) moving};
+    printData(data, 5);
+    #ifdef ONLY_GRAPH_MOVING
+    }
+    #endif
+  #endif
+  if (avg.X - prev.X + avg.Y - prev.Y + avg.Z - prev.Z > 0.15) {
+    if (!moving) {
+      moving = true;
+      basis = avg;
+      stillCount = 0;
+      queueInd = -1;
+    } else {
+      stillCount = 0;
+      if (logInd < LOG_LEN) {
+        _log[logInd] = avg;
+        logInd++;
+      }
+      // if (queueInd < 9) {
+      //   if (abs(avg.X) < 1.5 && abs(avg.Y) < 1.5 && abs(avg.Z) > 10) {
+      //     if (queue[queueInd] != 1) {
+      //       ++queueInd;
+      //       queue[queueInd] = 1;
+      //     }
+      //   } else if (abs(avg.X) < 1.5 && abs(avg.Y) < 1.5 && abs(avg.Z) < 8.5) {
+      //     if (queue[queueInd] != 2) {
+      //       ++queueInd;
+      //       queue[queueInd] = 2;
+      //     }
+      //   } else if (abs(avg.X) < 1.5 && abs(avg.Y) < 1.5 && abs(avg.Z) - 9.8 < 0.5) {
+      //     if (queue[queueInd] != 3 && queueInd > -1) {
+      //       ++queueInd;
+      //       queue[queueInd] = 3;
+      //     }
+      //   }
+      // }
+    }
+  } else if (moving) {
+    stillCount++;
+    if (stillCount > 20) {
+      moving = false;
+    #ifdef STATE
+      // for (int i = 0; i < 10; ++i) {
+      //   Serial.print(queue[i]);
+      //   Serial.print(" ");
+      // }
+      // Serial.println();
+      // Serial.println(compareUpDown());
+      for (int i = 0; i < 20; ++i) {
+        Serial.print(_log[i].X);
+        Serial.print(", ");
+      }
+      Serial.println();
+      for (int i = 0; i < 20; ++i) {
+        Serial.print(_log[i].Y);
+        Serial.print(", ");
+      }
+      Serial.println();
+      for (int i = 0; i < 20; ++i) {
+        Serial.print(_log[i].Z);
+        Serial.print(", ");
+      }
+      Serial.println();
+    #endif
+
+    #ifdef PREDICT
+      digitalWrite(13, HIGH);
+      int pred = predict(_log);
+      digitalWrite(13, LOW);
+      Serial.println(pred);
+    #endif
+
+      for (size_t i = 0; i < 10; ++i) {
+        queue[i] = 0;
+      }
+      for (size_t i = 0; i < logInd; ++i) {
+        _log[i] = {0.0, 0.0, 0.0};
+      }
+      queueInd = -1;
+      logInd = 0;
+      delay(100);
+    }
+  }
+  prev = avg;
+  delay(50);
+}
+
+/*
+0 - Circle CW
+1 - Circle CCW
+
+*/
