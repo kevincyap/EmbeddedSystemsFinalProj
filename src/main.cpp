@@ -231,10 +231,14 @@ void loop() {
   //
   digitalWrite(13, seqInd);
   if (skip > 0) {
+    #ifdef DISPLAY_STATE
     CircuitPlayground.setPixelColor(9, 0,0, max(skip*10, 255));
+    #endif
     --skip;
   } else if (state == WAITING_MOVE) {
+    #ifdef DISPLAY_STATE
     CircuitPlayground.setPixelColor(9, 0, 0, 100);
+    #endif
     //Reset the log
     if (abs(avg.X - prev.X) > MOVEMENT_THRESHOLD || abs(avg.Y - prev.Y) > MOVEMENT_THRESHOLD || abs(avg.Z - prev.Z) > MOVEMENT_THRESHOLD) {
       logInd = 0;
@@ -245,14 +249,18 @@ void loop() {
       }
     }
   } else if (state == LOGGING) {
+    #ifdef DISPLAY_STATE
     CircuitPlayground.setPixelColor(9, 0, 100, 0);
+    #endif
     _log[logInd] = {avg.X - basis.X, avg.Y - basis.Y, avg.Z - basis.Z};
     ++logInd;
     if (logInd == LOG_LEN) {
       state = WAITING_STILL;
     }
   } else if (state == WAITING_STILL) {
+    #ifdef DISPLAY_STATE
     CircuitPlayground.setPixelColor(9, 100, 0, 0);
+    #endif
     if (stillCount > 10) {
       state = PREDICTING;
       stillCount = 0;
@@ -262,7 +270,9 @@ void loop() {
       stillCount = 0;
     }
   } else if (state == PREDICTING) {
+    #ifdef DISPLAY_STATE
     CircuitPlayground.setPixelColor(9, 100, 100, 0);
+    #endif
     #ifdef PREDICT
     int gesture = predict();
     if (gesture != 0) {
