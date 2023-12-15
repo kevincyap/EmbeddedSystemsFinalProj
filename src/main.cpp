@@ -77,6 +77,7 @@ enum Gesture {
   TP
 };
 
+//Sets of complete gestures split into first and second sequences
 uint8_t sequenceValues_1[10] = {RL, RL, RL, LR, LR, LR, RR, RR, RR, TP};
 uint8_t sequenceValues_2[10] = {LR, RR, TP, RL, RR, TP, RL, LR, TP, TP};
 
@@ -192,7 +193,7 @@ int predict() {
 void tapTime() {
   cli();
   state = TAPPED;
-  Serial.println("Tapped");
+  Serial.print("Gesture: 4 \n" );
   sei();
 }
 
@@ -278,8 +279,9 @@ void loop() {
     if (gesture != 0) {
       Serial.print("Gesture: ");
       Serial.println(gesture);
+          
     }
-    checkSequence(gesture);
+    
     #endif
     #ifdef STATE
     for (size_t i = 0; i < LOG_LEN; ++i) {
@@ -319,10 +321,3 @@ void loop() {
   prev = avg;
 }
 
-/*
-0 - Up Down
-1 - Down Up
-2 - Right Left
-3 - Rotate Right and back
-
-*/
